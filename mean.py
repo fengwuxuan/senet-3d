@@ -1,3 +1,6 @@
+'''
+get mean value and std value by dataset names, support activitynet and kinetics
+'''
 def get_mean(norm_value=255, dataset='activitynet'):
     assert dataset in ['activitynet', 'kinetics']
 
