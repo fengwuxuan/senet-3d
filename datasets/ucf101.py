@@ -43,6 +43,7 @@ class UCF101(data.Dataset):
         self.random_shift = random_shift
         self.test_mode = test_mode
         self.h5 = '/DATACENTER_SSD/ysd/ucf101_rgb.h5'
+        self.class_names = [str(x) for x in range(0,101)]
 
         if self.modality == 'RGBDiff':
             self.new_length += 1# Diff needs one more image to calculate diff

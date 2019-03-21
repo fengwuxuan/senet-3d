@@ -252,22 +252,22 @@ class SENet(nn.Module):
 
         if input_3x3:
             layer0_modules = [
-                ('conv1', nn.Conv3d(3, 64, 3, stride=2, padding=1,
+                ('conv1', nn.Conv3d(3, 64, [1,3,3], stride=2, padding=1,
                                     bias=False)),
                 ('bn1', nn.BatchNorm3d(64)),
                 ('relu1', nn.ReLU(inplace=True)),
-                ('conv2', nn.Conv3d(64, 64, 3, stride=1, padding=1,
+                ('conv2', nn.Conv3d(64, 64, [1,3,3], stride=1, padding=1,
                                     bias=False)),
                 ('bn2', nn.BatchNorm3d(64)),
                 ('relu2', nn.ReLU(inplace=True)),
-                ('conv3', nn.Conv3d(64, inplanes, 3, stride=1, padding=1,
+                ('conv3', nn.Conv3d(64, inplanes, [1,3,3], stride=1, padding=1,
                                     bias=False)),
                 ('bn3', nn.BatchNorm3d(inplanes)),
                 ('relu3', nn.ReLU(inplace=True)),
             ]
         else :
             layer0_modules = [
-                ('conv1', nn.Conv3d(3, inplanes, kernel_size=7, stride=2,
+                ('conv1', nn.Conv3d(3, inplanes, kernel_size=[7,7,7], stride=2,
                                     padding=3, bias=False)),
                 ('bn1', nn.BatchNorm3d(inplanes)),
                 ('relu1', nn.ReLU(inplace=True)),
@@ -315,9 +315,9 @@ class SENet(nn.Module):
             downsample_kernel_size=downsample_kernel_size,
             downsample_padding=downsample_padding
         )
-        self.avg_pool = nn.AvgPool3d([2,4,4], stride=1)
+        self.avg_pool = nn.AvgPool3d([1,4,4], stride=1)
         self.dropout = nn.Dropout(dropout_p) if dropout_p is not None else None
-        self.last_linear = nn.Linear(512 * block.expansion, num_classes)
+        self.last_linear = nn.Linear(512 * block.expansion , num_classes)
         
        # for m in self.modules():
        #     if isinstance(m, nn.Conv3d):
@@ -402,7 +402,8 @@ def se_resnet50(num_classes=1000, pretrained='imagenet'):
 
 def se_resnet101(num_classes=1000, pretrained='imagenet'):
     model = SENet(SEResNetBottleneck, [3, 4, 23, 3], groups=1, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
+                  #dropout_p=None, inplanes=64, input_3x3=False,
+                  dropout_p=0.2, inplanes=64, input_3x3=False, # for v3
                   downsample_kernel_size=1, downsample_padding=0,
                   num_classes=num_classes)
     if pretrained is not None:
@@ -413,7 +414,9 @@ def se_resnet101(num_classes=1000, pretrained='imagenet'):
 
 def se_resnet152(num_classes=1000, pretrained='imagenet'):
     model = SENet(SEResNetBottleneck, [3, 8, 36, 3], groups=1, reduction=16,
-                  dropout_p=None, inplanes=64, input_3x3=False,
+                  #dropout_p=None, inplanes=64, input_3x3=False,
+                  #dropout_p=0.2, inplanes=64, input_3x3=False,
+                  dropout_p=0.2, inplanes=64, input_3x3=False,
                   downsample_kernel_size=1, downsample_padding=0,
                   num_classes=num_classes)
     if pretrained is not None:

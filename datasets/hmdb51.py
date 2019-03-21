@@ -89,6 +89,21 @@ class HMDB51(data.Dataset):
         :param record: VideoRecord
         :return: list
         """
+        if record.num_frames > self.num_segments+1:
+            rand_end = max(0, record.num_frames - self.num_segments - 1)
+            begin_ind = randint(0, rand_end)
+            end_index = min(begin_ind + self.num_segments, record.num_frames)
+            rand = list(range(1,record.num_frames))
+            res = rand[begin_ind:end_index]
+        else:
+            rand_end = record.num_frames
+            res = list(range(1,record.num_frames))
+        for index in res:
+            if len(res) == self.num_segments:
+                break
+            res.append(index)
+        assert len(res) == self.num_segments
+        return res
 
         average_duration = (record.num_frames - self.new_length + 1) // self.num_segments
         if average_duration > 0:
@@ -100,6 +115,7 @@ class HMDB51(data.Dataset):
         return offsets + 1
 
     def _get_val_indices(self, record):
+        return _sample_indices(record)
         if record.num_frames > self.num_segments + self.new_length - 1:
             tick = (record.num_frames - self.new_length + 1) / float(self.num_segments)
             offsets = np.array([int(tick / 2.0 + tick * x) for x in range(self.num_segments)])

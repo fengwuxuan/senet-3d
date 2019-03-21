@@ -183,14 +183,24 @@ def generate_model(opt):
         if opt.pretrain_path:
             print('loading pretrained model {}'.format(opt.pretrain_path))
             pretrain = torch.load(opt.pretrain_path)
-            assert opt.arch == pretrain['arch']
+            #assert opt.arch == pretrain['arch']
+            #model.load_state_dict(pretrain['state_dict'])
+            pretrained_dict = pretrain['state_dict']
+            model_dict = model.state_dict()
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k.find("module.fc") == -1}
+            model_dict.update(pretrained_dict)
+            model.load_state_dict(model_dict)
 
-            model.load_state_dict(pretrain['state_dict'])
+            #model.load_state_dict(model_dict,strict=False)
 
             if opt.model == 'densenet':
                 model.module.classifier = nn.Linear(
                     model.module.classifier.in_features, opt.n_finetune_classes)
                 model.module.classifier = model.module.classifier.cuda()
+            elif opt.model == "senet":
+                model.module.last_linear = nn.Linear(model.module.last_linear.in_features, opt.n_finetune_classes)
+                model.module.last_linear = model.module.last_linear.cuda()
+                return model, model.parameters()
             else:
                 model.module.fc = nn.Linear(model.module.fc.in_features,
                                             opt.n_finetune_classes)
@@ -198,11 +208,6 @@ def generate_model(opt):
 
             parameters = get_fine_tuning_parameters(model, opt.ft_begin_index)
             return model, parameters
-        else:
-            if opt.model == "senet":
-                model.module.last_linear = nn.Linear(model.module.last_linear.in_features, opt.n_finetune_classes)
-                model.module.last_linear = model.module.last_linear.cuda()
-            return model, model.parameters()
     else:
         if opt.pretrain_path:
             print('loading pretrained model {}'.format(opt.pretrain_path))

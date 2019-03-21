@@ -24,7 +24,7 @@ def calculate_video_results(output_buffer, video_id, test_results, class_names):
     test_results['results'][video_id] = video_results
 
 
-def test(data_loader, model, opt, class_names):
+def test(data_loader, model, opt, results):
     print('test')
 
     model.eval()
@@ -33,9 +33,6 @@ def test(data_loader, model, opt, class_names):
     data_time = AverageMeter()
 
     end_time = time.time()
-    output_buffer = []
-    previous_video_id = ''
-    test_results = {'results': {}}
     for i, (inputs, targets) in enumerate(data_loader):
         data_time.update(time.time() - end_time)
 
@@ -45,18 +42,11 @@ def test(data_loader, model, opt, class_names):
             outputs = F.softmax(outputs)
 
         for j in range(outputs.size(0)):
-            if not (i == 0 and j == 0) and targets[j] != previous_video_id:
-                calculate_video_results(output_buffer, previous_video_id,
-                                        test_results, class_names)
-                output_buffer = []
-            output_buffer.append(outputs[j].data.cpu())
-            previous_video_id = targets[j]
-
-        if (i % 100) == 0:
-            with open(
-                    os.path.join(opt.result_path, '{}.json'.format(
-                        opt.test_subset)), 'w') as f:
-                json.dump(test_results, f)
+            vid = str(targets[j])
+            if vid not in results:
+               results[vid] = outputs[j].data.cpu().numpy()
+            else:
+               results[vid] += outputs[j].data.cpu().numpy()
 
         batch_time.update(time.time() - end_time)
         end_time = time.time()
@@ -68,7 +58,3 @@ def test(data_loader, model, opt, class_names):
                   len(data_loader),
                   batch_time=batch_time,
                   data_time=data_time))
-    with open(
-            os.path.join(opt.result_path, '{}.json'.format(opt.test_subset)),
-            'w') as f:
-        json.dump(test_results, f)

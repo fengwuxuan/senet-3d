@@ -38,7 +38,7 @@ if __name__ == '__main__':
         opt.scales.append(opt.scales[-1] * opt.scale_step)
     opt.arch = '{}-{}'.format(opt.model, opt.model_depth)
     opt.mean = get_mean(opt.norm_value, dataset=opt.mean_dataset)
-    opt.std = get_std(opt.norm_value)
+    opt.std = get_std(opt.norm_value,dataset=opt.mean_dataset)
     print(opt)
     with open(os.path.join(opt.result_path, 'opts.json'), 'w') as opt_file:
         json.dump(vars(opt), opt_file)
@@ -102,6 +102,7 @@ if __name__ == '__main__':
             nesterov=opt.nesterov)
         scheduler = lr_scheduler.ReduceLROnPlateau(
             optimizer, 'min', patience=opt.lr_patience)
+        #scheduler = lr_scheduler.MultiStepLR(optimizer,opt.multistep)
     if not opt.no_val:
         spatial_transform = Compose([
             Scale(opt.sample_size),
@@ -109,13 +110,14 @@ if __name__ == '__main__':
             ToTensor(opt.norm_value), norm_method
         ])
         temporal_transform = LoopPadding(opt.sample_duration)
+        #temporal_transform = TemporalRandomCrop(opt.sample_duration)
         target_transform = ClassLabel()
         validation_data = get_validation_set(
             opt, spatial_transform, temporal_transform, target_transform)
         val_loader = torch.utils.data.DataLoader(
             validation_data,
             batch_size=opt.batch_size,
-            shuffle=False,
+            shuffle=True,
             num_workers=opt.n_threads,
             pin_memory=True)
         val_logger = Logger(
@@ -124,7 +126,7 @@ if __name__ == '__main__':
     if opt.resume_path:
         print('loading checkpoint {}'.format(opt.resume_path))
         checkpoint = torch.load(opt.resume_path)
-        assert opt.arch == checkpoint['arch']
+        #assert opt.arch == checkpoint['arch']
 
         opt.begin_epoch = checkpoint['epoch']
         model.load_state_dict(checkpoint['state_dict'])
@@ -142,8 +144,16 @@ if __name__ == '__main__':
 
         if not opt.no_train and not opt.no_val:
             scheduler.step(validation_loss)
+            #scheduler.step(i)
 
     if opt.test:
+        gts = {}
+        fp = open("../datasets/txt/test_fire.txt",'r')
+        lines = fp.readlines()
+        for line in lines:
+            gt = line.strip().split(' ')
+            gts[gt[3]] = int(gt[2])
+        print(len(gts))
         spatial_transform = Compose([
             Scale(int(opt.sample_size / opt.scale_in_test)),
             CornerCrop(opt.sample_size, opt.crop_position_in_test),
@@ -151,13 +161,24 @@ if __name__ == '__main__':
         ])
         temporal_transform = LoopPadding(opt.sample_duration)
         target_transform = VideoID()
-
-        test_data = get_test_set(opt, spatial_transform, temporal_transform,
-                                 target_transform)
-        test_loader = torch.utils.data.DataLoader(
-            test_data,
-            batch_size=opt.batch_size,
-            shuffle=False,
-            num_workers=opt.n_threads,
-            pin_memory=True)
-        test.test(test_loader, model, opt, test_data.class_names)
+        results = {}
+        for i in range(15):
+            print("round ", i)
+            opt.test_idx = i
+            test_data = get_test_set(opt, spatial_transform, temporal_transform,
+                                     target_transform)
+            test_loader = torch.utils.data.DataLoader(
+                test_data,
+                batch_size=opt.batch_size,
+                shuffle=False,
+                num_workers=opt.n_threads,
+                pin_memory=True)
+            test.test(test_loader, model, opt, results)
+        correct = 0
+        for k, v in results.items():
+            predict = np.argmax(v)
+            if predict == gts[k]:
+                correct += 1
+        print("accuracy is ", correct / len(gts))
+        #with open("../results/result_res50_v2.json","w") as f:
+        #    json.dump(results,f)

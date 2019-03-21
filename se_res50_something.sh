@@ -1,2 +1,0 @@
-#!/usr/bin/env bash
-python main.py --data_path /DATACENTER2/wxy/workspace/TRN-pytorch/video_datasets --video_path something/20bn-something-something-v1 --annotation_path something/something-something-v1- --result_path results/se_res50_something --dataset something --n_classes 400 --n_finetune_classes 174 --learning_rate 0.01 --weight_decay 1e-4 --mean_dataset kinetics --ft_begin_index 4 --model senet --model_depth 50 --resnet_shortcut B --batch_size 96 --n_threads 6 --checkpoint 5 --n_epochs 200

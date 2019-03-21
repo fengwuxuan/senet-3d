@@ -12,7 +12,7 @@ def parse_opts():
         '--root_path',
         default='/DATACENTER2/wxy/workspace/senet-3d',
         type=str,
-        help='Root directory path of experments')
+        help='Root directory path of data')
     parser.add_argument(
         '--video_path',
         default='video_kinetics_jpg',
@@ -235,9 +235,13 @@ def parse_opts():
     parser.add_argument(
         '--num_segments', default=16, type=int, help='num_segments')
     parser.add_argument(
+        '--test_idx', default=0, type=int, help='test_idx')
+    parser.add_argument(
         '--eval_step', default=10, type=int, help='eval_step')
     parser.add_argument(
         '--modality', default="RGB", type=str, help='modality')
+    parser.add_argument(
+        '--multistep',nargs='+', type=int)
 
     args = parser.parse_args()
 
